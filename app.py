@@ -47,39 +47,55 @@ ACKS = {
     ],
 }
 
+# Each new session samples one variation per stage so candidates going
+# through the exercise around the same time don't see identical prompts.
+STAGE1_QUESTIONS = [
+    "Imagina que você liga pra um cliente e ele diz: ‘tô sem tempo agora, manda e-mail’. O que você faz?",
+    "Você liga e a pessoa atende meio seca, dizendo: ‘já tenho um fornecedor, não preciso’. O que você faz?",
+    "Você manda uma mensagem e a pessoa não responde há 3 dias. Qual sua próxima ação?",
+    "No meio da ligação, o cliente pergunta ‘quanto custa?’ antes mesmo de você explicar o produto. Como você reage?",
+]
+
+STAGE2_QUIZ_QUESTIONS = [
+    "Pergunta rápida: qual é a primeira coisa que você deve fazer ao abrir uma cold call?\nA) Falar do produto\nB) Confirmar se é bom momento\nC) Pedir orçamento\nD) Sair correndo",
+    "Pergunta rápida: qual é o principal objetivo de uma cold call de qualificação (não de venda direta)?\nA) Fechar a venda\nB) Marcar uma próxima conversa\nC) Explicar todos os recursos do produto\nD) Pedir indicação",
+    "Pergunta rápida: se o cliente começa a falar bastante sobre o problema dele, o que você deve fazer?\nA) Interromper e já oferecer a solução\nB) Deixar falar e fazer perguntas pra entender melhor\nC) Mudar de assunto\nD) Marcar outra ligação",
+    "Pergunta rápida: qual é um sinal de que você deve encerrar a ligação educadamente?\nA) O cliente faz uma pergunta\nB) O cliente pede pra ligar em outro momento, repetidas vezes\nC) O cliente pede mais detalhes\nD) O cliente pergunta o preço",
+]
+
+STAGE3_PRODUCTS = [
+    {"name": "AgendaFácil", "description": "sistema de agendamento online pra salões e clínicas.\nTem agendamento, lembretes por WhatsApp e controle de clientes.", "price": 49},
+    {"name": "FinanceFácil", "description": "app de controle financeiro pra pequenos negócios.\nOrganiza entradas, saídas e gera relatórios simples.", "price": 39},
+    {"name": "RecrutaZap", "description": "ferramenta de triagem de currículos via WhatsApp.\nJá filtra e ranqueia os melhores candidatos automaticamente.", "price": 79},
+    {"name": "EstoqueSimples", "description": "sistema de controle de estoque pra lojas físicas.\nAvisa quando um produto tá acabando.", "price": 59},
+]
+
+STAGE4_FOLLOWUP_POOL = [
+    "Entendi, mas eu não tenho tempo pra aprender sistema novo agora.\nQuem sabe ano que vem?",
+    "Última dúvida: e se eu testar e não conseguir os resultados que eu quero?\nO que você me diria?",
+    "Minha equipe já tá acostumada com o que a gente usa hoje, trocar dá trabalho.",
+    "Isso parece bom, mas eu preciso conversar com meu sócio antes de decidir.",
+    "Já tentei uma ferramenta parecida antes e não deu muito certo.",
+]
+
 CHAT_TEMPLATE = r'''
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Treino SDR</title>
 <style>
-:root{--green:#128c7e;--bright:#25d366;--bg:#efeae2;--ink:#19312d}*{box-sizing:border-box}body{margin:0;background:#d9dbd5;font-family:Arial,Helvetica,sans-serif;color:var(--ink);min-height:100vh;display:flex;justify-content:center}.phone{width:100%;max-width:100%;height:100vh;background:var(--bg);display:flex;flex-direction:column;box-shadow:0 0 28px #0002;overflow:hidden}.top{height:66px;background:var(--green);color:white;display:flex;align-items:center;padding:10px 16px;gap:12px;flex:none}.avatar{width:43px;height:43px;border-radius:50%;background:#d9fdd3;color:#087568;display:grid;place-items:center;font-size:22px}.top h1{font-size:16px;margin:0 0 4px}.status{font-size:12px;opacity:.85}.restart{margin-left:auto;border:0;background:transparent;color:#d9fdd3;font-size:11px;text-decoration:underline;cursor:pointer;padding:6px}.progress{height:4px;background:#0a7065;flex:none}.progress i{display:block;height:100%;background:var(--bright);width:0;transition:width .3s}.messages{padding:15px 12px 18px;overflow:auto;flex:1;background-color:#efeae2;background-image:radial-gradient(#d8d0c5 1px,transparent 1px);background-size:18px 18px}.row{display:flex;margin:5px 0}.row.me{justify-content:flex-end}.bubble{max-width:84%;padding:9px 11px 7px;border-radius:8px;background:#fff;box-shadow:0 1px 1px #0001;font-size:14px;line-height:1.42;white-space:pre-wrap;word-break:break-word}.me .bubble{background:#d9fdd3;border-top-right-radius:2px}.mentor .bubble{border-top-left-radius:2px}.time{display:block;text-align:right;color:#81908b;font-size:10px;margin-top:4px}.composer{background:#f0f2f5;padding:9px 10px max(9px, env(safe-area-inset-bottom));display:flex;gap:8px;align-items:flex-end;flex:none}.composer-default{display:flex;gap:8px;align-items:flex-end;width:100%}.composer textarea{border:0;resize:none;border-radius:22px;padding:12px 15px;font:14px Arial;line-height:1.25;min-height:44px;max-height:100px;flex:1;outline:none}.mic,.send,.recording-action{border:0;width:44px;height:44px;min-width:44px;border-radius:50%;color:white;font-size:20px;cursor:pointer;display:grid;place-items:center}.mic{background:#87928d;font-size:19px}.send{background:var(--bright)}.mic:disabled,.send:disabled{background:#9acbb1;cursor:default}.recording-controls{display:flex;align-items:center;gap:9px;width:100%;min-height:44px;flex:none}.recording-controls[hidden],.audio-support[hidden]{display:none}.recording-indicator{display:flex;align-items:center;gap:7px;color:#c0392b;font-size:13px;font-weight:bold;min-width:80px}.recording-dot{width:10px;height:10px;border-radius:50%;background:#e53935;animation:pulse 1s infinite}.recording-timer{font-variant-numeric:tabular-nums;font-size:15px;color:#47554f;min-width:43px}.transcript-preview{font-size:11px;color:#718079;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}.recording-action{font-size:18px}.cancel-recording{background:#87928d}.confirm-recording{background:var(--bright)}@keyframes pulse{0%,100%{opacity:.35;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}.audio-support{font-size:11px;text-align:center;color:#687871;padding:0 8px 7px;width:100%}.voice-bubble{min-width:220px;padding:9px 10px 7px}.voice-controls{display:flex;align-items:center;gap:9px}.voice-play{border:0;background:#128c7e;color:#fff;border-radius:50%;width:34px;height:34px;min-width:34px;font-size:15px;cursor:pointer}.voice-progress{height:5px;background:#a6d8ac;border-radius:5px;overflow:hidden;flex:1;cursor:pointer}.voice-progress i{display:block;height:100%;width:0;background:#128c7e;transition:width .1s}.voice-duration{font-size:11px;color:#42655b;min-width:30px;text-align:right;font-variant-numeric:tabular-nums}.voice-native{width:100%;height:30px;margin-top:6px}.send:disabled{background:#9acbb1;cursor:default}.typing{display:none;padding:8px 14px}.typing.show{display:flex;gap:4px}.typing b{width:6px;height:6px;border-radius:50%;background:#87928d;animation:blink 1s infinite}.typing b:nth-child(2){animation-delay:.15s}.typing b:nth-child(3){animation-delay:.3s}@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}.notice{font-size:12px;text-align:center;color:#6b7770;padding:7px}.done{padding:14px;text-align:center;background:#f0f2f5;font-size:13px;color:#53635d}.done strong{display:block;color:var(--green);margin-bottom:4px}@media(max-width:420px){.transcript-preview{display:none}.recording-indicator{min-width:68px}}
-</style></head><body><main class="phone"><header class="top"><div class="avatar">👊</div><div><h1>Treino SDR</h1><div class="status" id="status">mentor de prospecção</div></div><button class="restart" id="restart" type="button">Recomeçar</button></header><div class="progress"><i id="progress"></i></div><section class="messages" id="messages"></section><div class="typing" id="typing"><b></b><b></b><b></b></div><div id="done"></div><form class="composer" id="composer"><div class="composer-default" id="composerDefault"><textarea id="input" rows="1" placeholder="Digite uma mensagem..." autocomplete="off"></textarea><button class="send" type="submit" aria-label="Enviar">➤</button><button class="mic" id="mic" type="button" aria-label="Gravar áudio" title="Gravar áudio">🎤</button></div><div class="recording-controls" id="recordingControls" hidden><div class="recording-indicator"><span class="recording-dot"></span><span>Gravando</span></div><span class="recording-timer" id="recordingTimer">00:00</span><span class="transcript-preview" id="transcriptPreview" aria-live="polite"></span><button class="recording-action cancel-recording" id="cancelRecording" type="button" aria-label="Descartar gravação">✕</button><button class="recording-action confirm-recording" id="sendRecording" type="button" aria-label="Enviar áudio">➤</button></div><div class="audio-support" id="audioSupport" hidden></div></form></main>
+:root{--green:#128c7e;--bright:#25d366;--bg:#efeae2;--ink:#19312d}*{box-sizing:border-box}body{margin:0;background:#d9dbd5;font-family:Arial,Helvetica,sans-serif;color:var(--ink);min-height:100vh;display:flex;justify-content:center}.phone{width:min(100%,540px);height:100vh;background:var(--bg);display:flex;flex-direction:column;box-shadow:0 0 28px #0002;overflow:hidden}.top{height:66px;background:var(--green);color:white;display:flex;align-items:center;padding:10px 16px;gap:12px;flex:none}.avatar{width:43px;height:43px;border-radius:50%;background:#d9fdd3;color:#087568;display:grid;place-items:center;font-size:22px}.top h1{font-size:16px;margin:0 0 4px}.status{font-size:12px;opacity:.85}.restart{margin-left:auto;border:0;background:transparent;color:#d9fdd3;font-size:11px;text-decoration:underline;cursor:pointer;padding:6px}.progress{height:4px;background:#0a7065;flex:none}.progress i{display:block;height:100%;background:var(--bright);width:0;transition:width .3s}.messages{padding:15px 12px 18px;overflow:auto;flex:1;background-color:#efeae2;background-image:radial-gradient(#d8d0c5 1px,transparent 1px);background-size:18px 18px}.row{display:flex;margin:5px 0}.row.me{justify-content:flex-end}.bubble{max-width:84%;padding:9px 11px 7px;border-radius:8px;background:#fff;box-shadow:0 1px 1px #0001;font-size:14px;line-height:1.42;white-space:pre-wrap;word-break:break-word}.me .bubble{background:#d9fdd3;border-top-right-radius:2px}.mentor .bubble{border-top-left-radius:2px}.time{display:block;text-align:right;color:#81908b;font-size:10px;margin-top:4px}.composer{background:#f0f2f5;padding:9px 10px calc(9px + env(safe-area-inset-bottom));display:flex;gap:8px;align-items:flex-end}.composer textarea{border:0;resize:none;border-radius:22px;padding:12px 15px;font:14px Arial;line-height:1.25;min-height:44px;max-height:100px;flex:1;outline:none}.send{border:0;width:44px;height:44px;border-radius:50%;background:var(--bright);color:white;font-size:20px;cursor:pointer}.send:disabled{background:#9acbb1;cursor:default}.typing{display:none;padding:8px 14px}.typing.show{display:flex;gap:4px}.typing b{width:6px;height:6px;border-radius:50%;background:#87928d;animation:blink 1s infinite}.typing b:nth-child(2){animation-delay:.15s}.typing b:nth-child(3){animation-delay:.3s}@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}.notice{font-size:12px;text-align:center;color:#6b7770;padding:7px}.done{padding:14px;text-align:center;background:#f0f2f5;font-size:13px;color:#53635d}.done strong{display:block;color:var(--green);margin-bottom:4px}@media(min-width:600px){.phone{height:calc(100vh - 24px);margin:12px 0;border-radius:12px}.top{border-radius:12px 12px 0 0}}
+</style></head><body><main class="phone"><header class="top"><div class="avatar">👊</div><div><h1>Treino SDR</h1><div class="status" id="status">mentor de prospecção</div></div><button class="restart" id="restart" type="button">Recomeçar</button></header><div class="progress"><i id="progress"></i></div><section class="messages" id="messages"></section><div class="typing" id="typing"><b></b><b></b><b></b></div><div id="done"></div><form class="composer" id="composer"><textarea id="input" rows="1" placeholder="Digite uma mensagem..." autocomplete="off"></textarea><button class="send" aria-label="Enviar">➤</button></form></main>
 <script>
-const messagesEl=document.getElementById('messages'), input=document.getElementById('input'), form=document.getElementById('composer'), composerDefault=document.getElementById('composerDefault'), mic=document.getElementById('mic'), recordingControls=document.getElementById('recordingControls'), cancelRecording=document.getElementById('cancelRecording'), sendRecording=document.getElementById('sendRecording'), recordingTimer=document.getElementById('recordingTimer'), transcriptPreview=document.getElementById('transcriptPreview'), audioSupport=document.getElementById('audioSupport'), typing=document.getElementById('typing'), doneEl=document.getElementById('done'), progress=document.getElementById('progress'), statusEl=document.getElementById('status'), restartEl=document.getElementById('restart');send.style.display='none';
-let busy=false, rendered=0, sid=localStorage.getItem('treino_sdr_sid')||'', mediaRecorder=null, mediaStream=null, recordedChunks=[], recordingStartedAt=0, recordingInterval=null, speechRecognition=null, finalTranscript='', interimTranscript='', stopAction='send', voiceObjectUrls=new Set();
-const MAX_RECORDING_SECONDS=120;
-const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-function bubble(text,mine,time){const row=document.createElement('div');row.className='row '+(mine?'me':'mentor');const b=document.createElement('div');b.className='bubble';b.textContent=text;const t=document.createElement('span');t.className='time';t.textContent=time||'agora';b.appendChild(t);row.appendChild(b);messagesEl.appendChild(row);messagesEl.scrollTop=messagesEl.scrollHeight;}
-function formatDuration(seconds){const total=Math.max(0,Math.round(seconds||0));return Math.floor(total/60)+':'+String(total%60).padStart(2,'0');}
-function voiceBubble(blob,duration,time){const row=document.createElement('div');row.className='row me';const b=document.createElement('div');b.className='bubble voice-bubble';const controls=document.createElement('div');controls.className='voice-controls';const play=document.createElement('button');play.className='voice-play';play.type='button';play.setAttribute('aria-label','Reproduzir áudio');play.textContent='▶';const progressBar=document.createElement('div');progressBar.className='voice-progress';progressBar.setAttribute('role','progressbar');const fill=document.createElement('i');progressBar.appendChild(fill);const durationEl=document.createElement('span');durationEl.className='voice-duration';durationEl.textContent=formatDuration(duration);controls.append(play,progressBar,durationEl);const audio=document.createElement('audio');audio.className='voice-native';audio.controls=true;audio.preload='metadata';const url=URL.createObjectURL(blob);voiceObjectUrls.add(url);audio.src=url;
-function sync(){const ratio=audio.duration&&isFinite(audio.duration)?audio.currentTime/audio.duration:0;fill.style.width=(ratio*100)+'%';durationEl.textContent=formatDuration(audio.currentTime||duration);}
-play.addEventListener('click',()=>{if(audio.paused){audio.play();}else{audio.pause();}});audio.addEventListener('play',()=>{play.textContent='❚❚';play.setAttribute('aria-label','Pausar áudio');});audio.addEventListener('pause',()=>{play.textContent='▶';play.setAttribute('aria-label','Reproduzir áudio');});audio.addEventListener('timeupdate',sync);audio.addEventListener('loadedmetadata',()=>{if(isFinite(audio.duration)){durationEl.textContent=formatDuration(audio.duration);}});audio.addEventListener('ended',()=>{fill.style.width='0%';durationEl.textContent=formatDuration(audio.duration||duration);});progressBar.addEventListener('click',event=>{if(!audio.duration||!isFinite(audio.duration))return;audio.currentTime=((event.clientX-progressBar.getBoundingClientRect().left)/progressBar.clientWidth)*audio.duration;});b.append(controls,audio);const t=document.createElement('span');t.className='time';t.textContent=time||'agora';b.appendChild(t);row.appendChild(b);messagesEl.appendChild(row);messagesEl.scrollTop=messagesEl.scrollHeight;}
+const messagesEl=document.getElementById('messages'), input=document.getElementById('input'), form=document.getElementById('composer'), typing=document.getElementById('typing'), doneEl=document.getElementById('done'), progress=document.getElementById('progress'), statusEl=document.getElementById('status'), restartEl=document.getElementById('restart');
+let busy=false, rendered=0, sid=localStorage.getItem('treino_sdr_sid')||'';
+function bubble(text, mine, time){const row=document.createElement('div');row.className='row '+(mine?'me':'mentor');const b=document.createElement('div');b.className='bubble';b.textContent=text;const t=document.createElement('span');t.className='time';t.textContent=time||'agora';b.appendChild(t);row.appendChild(b);messagesEl.appendChild(row);messagesEl.scrollTop=messagesEl.scrollHeight;}
 function showTyping(on){typing.classList.toggle('show',on);messagesEl.scrollTop=messagesEl.scrollHeight;}
-function showAudioNotice(text){audioSupport.textContent=text;audioSupport.hidden=false;}
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 function sessionHeaders(json=false){const headers=json?{'Content-Type':'application/json'}:{};if(sid)headers['X-Session-Id']=sid;return headers;}
 function rememberSession(d){if(d.session_id){sid=d.session_id;localStorage.setItem('treino_sdr_sid',sid);}}
-async function renderNew(items,skipCandidate=false){for(const m of items){if(skipCandidate&&m.sender==='candidate')continue;if(m.sender==='mentor'){showTyping(true);await wait(800+Math.floor(Math.random()*701));showTyping(false)}bubble(m.text,m.sender==='candidate',m.time);rendered++;}}
+async function renderNew(items){for(const m of items){if(m.sender==='mentor'){showTyping(true);await wait(800+Math.floor(Math.random()*701));showTyping(false)}bubble(m.text,m.sender==='candidate',m.time);rendered++;}}
 async function load(){const r=await fetch('/api/state',{headers:sessionHeaders()});const d=await r.json();rememberSession(d);messagesEl.innerHTML='';rendered=0;await renderNew(d.messages);update(d)}
-function update(d){progress.style.width=(Math.min(d.stage_number,4)/4*100)+'%';statusEl.textContent=d.complete?'treino concluído':('etapa '+d.stage_number+' de 4');if(d.complete){doneEl.innerHTML='<div class="done"><strong>Treino concluído ✅</strong>Valeu por participar!<br>A equipe de recrutamento vai analisar seu resultado.</div>';input.disabled=true;mic.disabled=true;form.querySelector('.send').disabled=true;input.placeholder='Treino encerrado';}}
-restartEl.addEventListener('click',()=>{voiceObjectUrls.forEach(url=>URL.revokeObjectURL(url));localStorage.removeItem('treino_sdr_sid');window.location.reload();});
-async function postText(text,voice=false,onVoiceSent=null){const r=await fetch('/api/message',{method:'POST',headers:sessionHeaders(true),body:JSON.stringify({text})});const d=await r.json();rememberSession(d);if(!r.ok)throw new Error(d.error||'Não foi possível enviar.');if(voice&&onVoiceSent)onVoiceSent();await renderNew(d.new_messages||[],voice);update(d);}
-form.addEventListener('submit',async e=>{e.preventDefault();if(busy||!input.value.trim())return;const text=input.value.trim();input.value='';input.style.height='auto';send.style.display='none';mic.style.display='grid';busy=true;form.querySelector('.send').disabled=true;try{await postText(text)}catch(err){bubble('Ops, não consegui enviar agora. Tenta de novo?',false)}finally{busy=false;if(!input.disabled)form.querySelector('.send').disabled=false;input.focus();}});
-input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,100)+'px';const hasText=input.value.trim().length>0;send.style.display=hasText?'grid':'none';mic.style.display=hasText?'none':'grid';});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});
-function resetRecordingUI(){clearInterval(recordingInterval);recordingInterval=null;recordingControls.hidden=true;composerDefault.hidden=false;recordingTimer.textContent='00:00';transcriptPreview.textContent='';mic.disabled=false;sendRecording.disabled=false;cancelRecording.disabled=false;}
-function stopSpeech(){if(speechRecognition){speechRecognition.onend=null;try{speechRecognition.stop();}catch(err){}speechRecognition=null;}}
-function finishRecording(action){if(!mediaRecorder||mediaRecorder.state==='inactive')return;stopAction=action;clearInterval(recordingInterval);stopSpeech();mediaRecorder.stop();}
-function beginRecording(){if(!SpeechRecognition){showAudioNotice('Áudio disponível no Chrome. Tente pelo Chrome, ou digite sua resposta!');return;}if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){showAudioNotice('Seu navegador não suporta áudio. Tente pelo Chrome, ou digite sua resposta!');return;}audioSupport.hidden=true;navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{mediaStream=stream;recordedChunks=[];finalTranscript='';interimTranscript='';mediaRecorder=new MediaRecorder(stream);mediaRecorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data);};mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:mediaRecorder.mimeType||'audio/webm'});const elapsed=(performance.now()-recordingStartedAt)/1000;const action=stopAction;mediaRecorder=null;if(mediaStream){mediaStream.getTracks().forEach(track=>track.stop());mediaStream=null;}resetRecordingUI();if(action==='send'){setTimeout(()=>sendVoice(blob,Math.min(elapsed,MAX_RECORDING_SECONDS)),100);}else{showAudioNotice('Gravação descartada. Você pode tentar novamente ou digitar sua resposta.');}};mediaRecorder.start();recordingStartedAt=performance.now();recordingControls.hidden=false;composerDefault.hidden=true;recordingInterval=setInterval(()=>{const elapsed=Math.floor((performance.now()-recordingStartedAt)/1000);recordingTimer.textContent=formatDuration(elapsed);if(elapsed>=MAX_RECORDING_SECONDS)finishRecording('send');},250);speechRecognition=new SpeechRecognition();speechRecognition.lang='pt-BR';speechRecognition.continuous=true;speechRecognition.interimResults=true;speechRecognition.onresult=e=>{interimTranscript='';for(let i=e.resultIndex;i<e.results.length;i++){const phrase=e.results[i][0].transcript;if(e.results[i].isFinal)finalTranscript+=(finalTranscript?' ':'')+phrase.trim();else interimTranscript+=phrase;}transcriptPreview.textContent=(finalTranscript+' '+interimTranscript).trim();};speechRecognition.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){showAudioNotice('Não consegui acessar seu microfone. Você pode digitar sua resposta normalmente! 😊');stopSpeech();}};speechRecognition.onend=()=>{if(speechRecognition&&mediaRecorder&&mediaRecorder.state==='recording'){try{speechRecognition.start();}catch(err){}}};try{speechRecognition.start();}catch(err){stopSpeech();showAudioNotice('Não consegui iniciar a transcrição. Você pode digitar sua resposta normalmente! 😊');}}).catch(()=>{resetRecordingUI();showAudioNotice('Não consegui acessar seu microfone. Você pode digitar sua resposta normalmente! 😊');});}
-async function sendVoice(blob,duration){if(busy)return;const text=(finalTranscript+' '+interimTranscript).trim()||'Não consegui transcrever este áudio.';busy=true;mic.disabled=true;try{await postText(text,true,()=>voiceBubble(blob,duration,new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})));}catch(err){showAudioNotice('Ops, não consegui enviar o áudio agora. Tenta de novo ou digite sua resposta.');}finally{busy=false;if(!input.disabled)mic.disabled=false;}}
-mic.addEventListener('click',beginRecording);cancelRecording.addEventListener('click',()=>finishRecording('cancel'));sendRecording.addEventListener('click',()=>finishRecording('send'));load();
+function update(d){progress.style.width=(Math.min(d.stage_number,4)/4*100)+'%';statusEl.textContent=d.complete?'treino concluído':('etapa '+d.stage_number+' de 4');if(d.complete){doneEl.innerHTML='<div class="done"><strong>Treino concluído ✅</strong>Valeu por participar!<br>A equipe de recrutamento vai analisar seu resultado.</div>';input.disabled=true;form.querySelector('button').disabled=true;input.placeholder='Treino encerrado';}}
+restartEl.addEventListener('click',()=>{localStorage.removeItem('treino_sdr_sid');window.location.reload();});
+form.addEventListener('submit',async e=>{e.preventDefault();if(busy||!input.value.trim())return;const text=input.value.trim();input.value='';input.style.height='auto';busy=true;form.querySelector('button').disabled=true;try{const r=await fetch('/api/message',{method:'POST',headers:sessionHeaders(true),body:JSON.stringify({text})});const d=await r.json();rememberSession(d);if(!r.ok){throw new Error(d.error||'Não foi possível enviar.')}await renderNew(d.new_messages||[]);update(d)}catch(err){bubble('Ops, não consegui enviar agora. Tenta de novo?',false)}finally{busy=false;if(!input.disabled)form.querySelector('button').disabled=false;input.focus();}});input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,100)+'px'});input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});load();
 </script></body></html>
 '''
 
@@ -102,6 +118,10 @@ def new_session():
         "objection_round": 0,
         "temp_name": "",
         "temp_contact": "",
+        "stage1_question": random.choice(STAGE1_QUESTIONS),
+        "stage2_quiz": random.choice(STAGE2_QUIZ_QUESTIONS),
+        "stage3_product": random.choice(STAGE3_PRODUCTS),
+        "objection_followups": random.sample(STAGE4_FOLLOWUP_POOL, 2),
     }
     add_mentor(sessions[sid], "Fala! 👊 Sou seu mentor de prospecção.\nVamos fazer um treino rápido de SDR? Leva uns 15 minutos. Bora?")
     return sid
@@ -209,7 +229,7 @@ def observations(data):
 
 def start_stage1(data):
     data["stage"] = "stage1"
-    add_mentor(data, "Fechou! Pra aquecer:\nImagina que você liga pra um cliente e ele diz: ‘tô sem tempo agora, manda e-mail’. O que você faz?")
+    add_mentor(data, "Fechou! Pra aquecer:\n" + data["stage1_question"])
 
 
 def handle_message(data, text):
@@ -281,7 +301,6 @@ def handle_message(data, text):
             data["temp_name"] = ""
             data["temp_contact"] = ""
             add_mentor(data, f"Prazer, {data['name']}! Valeu por chegar junto 👊")
-            add_mentor(data, "Você pode responder por texto ou áudio. Bora!")
             start_stage1(data)
         elif name:
             add_mentor(data, "E qual seu WhatsApp? Pode mandar só o número, tipo: (11) 99999-9999")
@@ -295,20 +314,22 @@ def handle_message(data, text):
         add_mentor(data, acknowledge(text))
         add_mentor(data, "Dica rápida: numa cold call, você tem poucos segundos pra prender atenção.\nComece pelo nome, confirme se é um bom momento e diga em uma frase o valor que você traz.")
         add_mentor(data, "Exemplo: ‘João, tranquilo? Sou da X. Posso tomar 30 segundos? É sobre reduzir seu tempo de agendamento.’")
-        add_mentor(data, "Pergunta rápida: qual é a primeira coisa que você deve fazer ao abrir uma cold call?\nA) Falar do produto\nB) Confirmar se é bom momento\nC) Pedir orçamento\nD) Sair correndo")
+        add_mentor(data, data["stage2_quiz"])
         data["stage"] = "stage2"
         return
     if stage == "stage2":
         record_scores(data, text, stage)
         add_mentor(data, acknowledge(text))
-        add_mentor(data, "Agora a parte boa 😄\nProduto fictício: AgendaFácil, sistema de agendamento online pra salões e clínicas.")
-        add_mentor(data, "Tem agendamento, lembretes por WhatsApp e controle de clientes.\nCusta R$49/mês. Pode mandar por texto ou áudio, como preferir! Me vende isso como se fosse uma cold call!")
+        product = data["stage3_product"]
+        add_mentor(data, f"Agora a parte boa 😄\nProduto fictício: {product['name']}, {product['description']}")
+        add_mentor(data, f"Custa R${product['price']}/mês. Me vende isso como se fosse uma cold call!")
         data["stage"] = "stage3"
         return
     if stage == "stage3":
         record_scores(data, text, stage)
         add_mentor(data, acknowledge(text))
-        add_mentor(data, "Fechou, vamos simular de verdade.\nHmm, parece interessante, mas eu já uso um caderno e funciona bem. R$49/mês parece caro pro que é.")
+        price = data["stage3_product"]["price"]
+        add_mentor(data, f"Fechou, vamos simular de verdade.\nHmm, parece interessante, mas eu resolvo isso de outro jeito hoje. R${price}/mês parece caro pro que é.")
         data["stage"] = "stage4_1"
         data["objection_round"] = 1
         return
@@ -316,12 +337,13 @@ def handle_message(data, text):
         record_scores(data, text, "stage4")
         round_no = data.get("objection_round", 1)
         add_mentor(data, acknowledge(text))
+        followups = data["objection_followups"]
         if round_no == 1:
-            add_mentor(data, "Entendi, mas eu não tenho tempo pra aprender sistema novo agora.\nQuem sabe ano que vem?")
+            add_mentor(data, followups[0])
             data["stage"] = "stage4_2"
             data["objection_round"] = 2
         elif round_no == 2:
-            add_mentor(data, "Última dúvida: e se eu testar e não conseguir trazer mais clientes?\nO que você me diria?")
+            add_mentor(data, followups[1])
             data["stage"] = "stage4_3"
             data["objection_round"] = 3
         else:
