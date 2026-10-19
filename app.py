@@ -6,6 +6,8 @@ import random
 import re
 import secrets
 from flask import Flask, jsonify, render_template_string, request, send_file
+from urllib import request as urlreq
+from urllib.error import URLError
 
 app = Flask(__name__)
 
@@ -212,6 +214,52 @@ def observations(data):
         lines.append("Engajamento alto e boa disposição para o treino.")
     return "\n".join(lines[:3])
 
+def notify_google_chat(data):
+    """Send a completion summary to Google Chat via webhook when a candidate finishes the training."""
+    webhook_url = os.environ.get("GOOGLE_CHAT_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        return  # No webhook configured, silently skip
+
+    name = data.get("name") or "Candidato"
+    contact = data.get("contact") or "nao informado"
+    s = data["scores"]
+    ovr = overall(data)
+    obs_text = data.get("observations") or "Aguardando mais respostas."
+    completed = data.get("completed_at") or now()
+
+    message = (
+        "\U0001f3af *Treino SDR \u2014 Candidato Concluiu*\n"
+        "\n"
+        "\U0001f464 *Nome:* {name}\n"
+        "\U0001f4de *Contato:* {contact}\n"
+        "\n"
+        "\U0001f4ca *Scores (0-10):*\n"
+        "  \u2022 Clareza: {clareza}\n"
+        "  \u2022 Racioc\u00ednio: {raciocinio}\n"
+        "  \u2022 Resili\u00eancia: {resiliencia}\n"
+        "  \u2022 Engajamento: {engajamento}\n"
+        "  \u2022 *Geral (ponderada): {ovr}*\n"
+        "\n"
+        "\U0001f4dd *Observa\u00e7\u00f5es:*\n"
+        "{obs}\n"
+        "\n"
+        "\U0001f550 Conclu\u00eddo em: {completed}\n"
+        "\U0001f916 Treino SDR \u2014 Renato Ga\u00facho"
+    ).format(
+        name=name, contact=contact, 
+        clareza=s["clareza"], raciocinio=s["raciocinio"],
+        resiliencia=s["resiliencia"], engajamento=s["engajamento"],
+        ovr=ovr, obs=obs_text, completed=completed
+    )
+
+    payload = json.dumps({"text": message}).encode("utf-8")
+    req = urlreq.Request(webhook_url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        urlreq.urlopen(req, timeout=10)
+    except (URLError, Exception):
+        pass  # Don't break the candidate's experience if webhook fails
+
+
 
 def start_stage1(data):
     data["stage"] = "stage1"
@@ -306,6 +354,7 @@ def handle_message(data, text):
             data["complete"] = True
             data["completed_at"] = now()
             data["observations"] = observations(data)
+            notify_google_chat(data)
 
 
 def public_state(data, sid):
@@ -356,6 +405,10 @@ def export_json():
     records = [admin_record(d) for d in sessions.values()]
     body = json.dumps({"exported_at": now(), "candidates": records}, ensure_ascii=False, indent=2).encode("utf-8")
     return send_file(BytesIO(body), mimetype="application/json", as_attachment=True, download_name="treino-sdr-candidatos.json")
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "8080")), debug=False)
 
 
 if __name__ == "__main__":
